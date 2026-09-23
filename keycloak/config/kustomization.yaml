@@ -1,0 +1,18 @@
+# Renders the realm JSONs in this directory into the ConfigMap that
+# vshnKeycloak.yaml references as customConfigurationRef.
+#
+# To add a realm: drop the JSON next to this file and list it under files.
+configMapGenerator:
+  - name: keycloak-config
+    options:
+      annotations:
+        # The instance copies and rewrites this ConfigMap, so ArgoCD must not treat
+        # its own additions as drift, and must not prune it during a sync.
+        argocd.argoproj.io/compare-options: IgnoreExtraneous
+        argocd.argoproj.io/sync-options: Prune=false
+    files:
+      # One entry per realm JSON placed in this directory.
+      - realm-example.json
+generatorOptions:
+  # The name must stay stable, because customConfigurationRef points at it by name.
+  disableNameSuffixHash: true

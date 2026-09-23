@@ -1,0 +1,20 @@
+{
+  "realm": "example",
+  "enabled": true,
+  "displayName": "$(env:REALM_DISPLAY_NAME:-Example)",
+  "ssoSessionIdleTimeout": "$(env:REALM_SSO_MAX_IDLE_TIMEOUT:-1800)",
+  "ssoSessionMaxLifespan": "$(env:REALM_SSO_MAX_LIFESPAN:-36000)",
+  "clients": [
+    {
+      "clientId": "example-client",
+      "enabled": "$(env:EXAMPLE_CLIENT_ENABLED:-false)",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "$(env:EXAMPLE_CLIENT_SECRET)",
+      "standardFlowEnabled": true,
+      "rootUrl": "$(env:EXAMPLE_CLIENT_BASE_URL)",
+      "redirectUris": ["$(env:EXAMPLE_CLIENT_BASE_URL)/*"],
+      "webOrigins": ["+"]
+    }
+  ]
+}

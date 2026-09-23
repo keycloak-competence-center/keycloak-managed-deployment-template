@@ -1,0 +1,80 @@
+# Non-secret environment variables for the Keycloak instance. Referenced from
+# vshnKeycloak.yaml as service.envFrom[].configMapRef.
+#
+# Two audiences:
+#   * Keycloak itself, through KC_* settings.
+#   * Your realm JSONs, through their $(env:NAME:-default) placeholders. Those
+#     names are yours to choose; the ones below only show the shape.
+#
+# Secrets do not belong here. Put them in the Secret, which is read through the
+# same envFrom list. See bootstrap/secret.example.yaml.
+#
+# VSHN sets KC_HOSTNAME, KC_HOSTNAME_ADMIN, KC_HTTP_RELATIVE_PATH, the database
+# settings and the HTTPS certificate paths itself, as container env. Container env
+# outranks envFrom, so setting any of those here has no effect.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-env-config
+  namespace: <your-namespace>
+data:
+
+  # Observability
+  KC_METRICS_ENABLED: "true"
+  KC_HTTP_METRICS_HISTOGRAMS_ENABLED: "true"
+  # Latency buckets in milliseconds.
+  KC_HTTP_METRICS_SLOS: "5,10,25,50,250,500,1000,2500,5000,10000"
+  # Per user login and logout metrics. Cardinality grows with realms and clients,
+  # not with the number of users.
+  KC_EVENT_METRICS_USER_ENABLED: "true"
+  KC_HTTP_ACCESS_LOG_ENABLED: "true"
+
+  # Logging
+  # json saves the log aggregator from parsing Keycloak's default format.
+  KC_LOG_CONSOLE_OUTPUT: "json"
+  # A root level followed by per category overrides. Raise one category to debug
+  # instead of the root level, which is very noisy on a busy instance.
+  KC_LOG_LEVEL: "info,org.keycloak.services.error.KeycloakErrorHandler:debug,org.keycloak.http.access-log:info"
+
+  # Tracing. KC_TRACING_ENABLED is a build time option, so it takes effect only
+  # after the instance restarts.
+  KC_TRACING_ENABLED: "false"
+  # 0.0 exports no spans, 1.0 exports all of them.
+  KC_TRACING_SAMPLER_RATIO: "0.0"
+
+  # Outbound TLS, for reaching an IdP or user store that presents a private CA.
+  # The file has to get into the pod first: list the Secret or ConfigMap holding it
+  # under service.customMounts in vshnKeycloak.yaml, which mounts it at
+  # /custom/secrets/<name> or /custom/configs/<name>.
+  # KC_TRUSTSTORE_PATHS: "/custom/secrets/<mount-name>/truststore.pem"
+
+  # ---------------------------------------------------------------------------
+  # Values consumed by the realm JSONs. Names below are examples.
+  # ---------------------------------------------------------------------------
+
+  REALM_DISPLAY_NAME: "<Your Company>"
+  # Seconds.
+  REALM_SSO_MAX_IDLE_TIMEOUT: "7800"
+  REALM_SSO_MAX_LIFESPAN: "43800"
+
+  # A client defined in every environment but switched on only in some. In the
+  # realm JSON: "enabled": "$(env:EXAMPLE_CLIENT_ENABLED:-false)"
+  EXAMPLE_CLIENT_ENABLED: "true"
+  EXAMPLE_CLIENT_BASE_URL: "https://app.example.ch"
+
+  # An upstream OIDC identity provider. Everything except the client secret is
+  # public and belongs here; the secret goes in the Secret.
+  EXAMPLE_IDP_ISSUER: "https://idp.example.ch/realms/example"
+  EXAMPLE_IDP_AUTHORIZATION_URL: "https://idp.example.ch/realms/example/protocol/openid-connect/auth"
+  EXAMPLE_IDP_TOKEN_URL: "https://idp.example.ch/realms/example/protocol/openid-connect/token"
+  EXAMPLE_IDP_USER_INFO_URL: "https://idp.example.ch/realms/example/protocol/openid-connect/userinfo"
+  EXAMPLE_IDP_JWKS_URL: "https://idp.example.ch/realms/example/protocol/openid-connect/certs"
+  EXAMPLE_IDP_LOGOUT_URL: "https://idp.example.ch/realms/example/protocol/openid-connect/logout"
+  EXAMPLE_IDP_METADATA_URL: "https://idp.example.ch/realms/example/.well-known/openid-configuration"
+
+  # Signing certificate of a SAML identity provider, base64 DER with no PEM header
+  # lines. Keeping a second entry lets you stage the successor certificate before a
+  # rotation, so the switch is a one line change in the realm JSON.
+  # EXAMPLE_SAML_IDP_CERTIFICATE: "MIIF..."
+  # EXAMPLE_SAML_IDP_CERTIFICATE_NEXT: "MIIF..."

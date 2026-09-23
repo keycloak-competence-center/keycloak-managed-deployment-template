@@ -1,0 +1,76 @@
+# Checks the manifests on every push and merge request, without touching a cluster.
+name: validate
+
+on:
+  push:
+  pull_request:
+
+env:
+  # AppCat release whose VSHNKeycloak CRD the claim is validated against. Keep it
+  # close to what runs on your zone; the fields VSHN accepts change with it.
+  APPCAT_VERSION: v4.195.0
+  KUSTOMIZE_VERSION: v5.7.1
+  KUBECONFORM_VERSION: v0.8.0
+
+jobs:
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install tools
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -sfL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" | tar xz -C "$HOME/bin"
+          curl -sfL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar xz -C "$HOME/bin" kubeconform
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      # No public schema catalog tracks the AppCat CRDs closely enough, so the schema
+      # is generated from the CRD itself. additionalProperties: false is what makes
+      # kubeconform -strict reject a misspelled field instead of ignoring it.
+      - name: Generate VSHNKeycloak schema
+        run: |
+          mkdir -p schemas
+          curl -sfL "https://raw.githubusercontent.com/vshn/appcat/${APPCAT_VERSION}/crds/vshn.appcat.vshn.io_vshnkeycloaks.yaml" \
+            | yq -o=json '.spec.versions[] | select(.name == "v1") | .schema.openAPIV3Schema' \
+            | jq 'walk(if type == "object" and has("properties") and (has("additionalProperties") | not) then . + {additionalProperties: false} else . end)' \
+            > schemas/vshnkeycloak_v1.json
+
+      - name: Check realm JSONs parse
+        run: |
+          for f in keycloak/config/*.json; do
+            jq empty "$f" || { echo "::error file=$f::invalid JSON"; exit 1; }
+          done
+
+      # Renders exactly what the two ArgoCD sources sync, so a realm JSON missing
+      # from kustomization.yaml, or listed but absent, fails here.
+      - name: Validate synced manifests
+        run: |
+          { cat keycloak/*.yaml; echo ---; kustomize build keycloak/config; } \
+            | kubeconform -strict -summary \
+                -schema-location default \
+                -schema-location 'schemas/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+                -
+
+      - name: Validate bootstrap manifests
+        run: |
+          kubeconform -strict -summary \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+            bootstrap/
+
+  # Fails a copy of the template until every <placeholder> is filled in. Skipped in
+  # the template repository itself, where the placeholders are the point.
+  placeholders:
+    if: github.repository != 'keycloak-competence-center/keycloak-managed-deployment-template'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check for unfilled placeholders
+        run: |
+          # Comment lines are skipped, and secret.example.yaml keeps its placeholders
+          # because real values never go into Git.
+          if grep -rnE '^[^#]*<[A-Za-z][^<>]*>' keycloak bootstrap --exclude=secret.example.yaml; then
+            echo "::error::Unfilled <placeholders> left, see the lines above."
+            exit 1
+          fi

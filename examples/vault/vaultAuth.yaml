@@ -1,0 +1,16 @@
+# Example for the HashiCorp Vault Secrets Operator, not synced. To use it, move this
+# file and vaultStaticSecret.yaml into keycloak/. The operator has to be installed
+# in the cluster, otherwise ArgoCD cannot sync these resources.
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: vault-auth
+  namespace: <your-namespace>
+spec:
+  vaultAuthGlobalRef:
+    name: <your-vault-auth-global>
+    namespace: <vault-secrets-operator-namespace>
+  jwt:
+    role: <your-vault-jwt-role>
+    serviceAccount: default

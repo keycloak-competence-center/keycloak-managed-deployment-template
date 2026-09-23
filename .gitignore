@@ -1,0 +1,21 @@
+# Editors and OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Secrets. Real values never go into this repository, see bootstrap/secret.example.yaml.
+# The pattern also catches a filled-in copy of that file.
+secret.yaml
+*.secret.yaml
+*-secret.yaml
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.jks
+kubeconfig*
+
+# Local render output, e.g. from `kustomize build keycloak/config > rendered.yaml`
+rendered*.yaml

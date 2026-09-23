@@ -1,0 +1,35 @@
+# Apply this once, into the namespace of your own ArgoCD. Everything after that is
+# driven by commits to the branch named in targetRevision.
+#
+# It lives outside keycloak/ on purpose: that directory is a sync source, and an
+# Application that manages its own manifest is confusing to reason about.
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak
+  # Namespace of your ArgoCD instance, not the Keycloak namespace.
+  namespace: <your-argocd-namespace>
+spec:
+  destination:
+    namespace: <your-namespace>
+    server: https://kubernetes.default.svc
+  project: default
+  # Two sources over the same repository. Directory sources are NOT recursive, so
+  # keycloak/ picks up only the manifests directly inside it, and keycloak/config/
+  # has to be listed separately. Anything you add in a further subdirectory is
+  # silently ignored unless you add a source for it.
+  sources:
+    - repoURL: https://git.example.ch/<your-org>/<your-repo>.git
+      targetRevision: <your-branch>
+      path: keycloak/
+    - repoURL: https://git.example.ch/<your-org>/<your-repo>.git
+      targetRevision: <your-branch>
+      path: keycloak/config/
+  syncPolicy:
+    automated:
+      selfHeal: true
+    syncOptions:
+      # Leaves resources ArgoCD did not change alone. VSHN mutates parts of the
+      # claim status, and this keeps those from showing up as drift.
+      - ApplyOutOfSyncOnly=true
