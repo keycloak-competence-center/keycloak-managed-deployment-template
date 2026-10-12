@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name}}-keycloak-config
+  namespace: {{ .Release.Namespace }}
+data:
+  {{ range $path, $_ := .Files.Glob "files/realm-*.json" }}
+  {{- base $path }}: |
+    {{- $.Files.Get $path | trim | nindent 4 }}
+  {{ end }}

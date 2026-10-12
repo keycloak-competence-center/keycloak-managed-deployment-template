@@ -16,8 +16,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: keycloak-env-config
-  namespace: <your-namespace>
+  name: "{{ .Release.Name }}-keycloak-env-config"
+  namespace: "{{ .Release.Namespace }}"
 data:
 
   # Observability
