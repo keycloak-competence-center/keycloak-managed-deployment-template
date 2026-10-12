@@ -19,7 +19,6 @@ metadata:
   name: "{{ .Release.Name }}-keycloak-env-config"
   namespace: "{{ .Release.Namespace }}"
 data:
-
   # Observability
   KC_METRICS_ENABLED: "true"
   KC_HTTP_METRICS_HISTOGRAMS_ENABLED: "true"

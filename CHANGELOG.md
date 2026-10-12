@@ -9,9 +9,4 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-* `VSHNKeycloak` claim, env ConfigMap, realm ConfigMap generator and ArgoCD
-  Application.
-* Minimal example realm, `helm`.
-* Vault Secrets Operator example in `examples/vault/`.
-* `validate` workflow: renders the manifests, checks them against the AppCat CRD
-  schema and fails copies that still contain `<placeholders>`.
+- `VSHNKeycloak` example with helm.

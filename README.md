@@ -35,29 +35,29 @@ Environment-specific values live in `helm/values.test.yaml` and
 
 ## Prerequisites
 
-* A namespace with the AppCat Keycloak offering enabled, see [AppCat Product](https://products.vshn.ch/appcat/index.html).
-* A Kubernetes config for each target cluster or namespace, provided to GitHub
+- A namespace with the AppCat Keycloak offering enabled, see [AppCat Product](https://products.vshn.ch/appcat/index.html).
+- A Kubernetes config for each target cluster or namespace, provided to GitHub
   Actions as repository secrets.
-* A DNS CNAME for the FQDN pointing at your APPUiO zone endpoint, for example
+- A DNS CNAME for the FQDN pointing at your APPUiO zone endpoint, for example
   `cname.cloudscale-lpg-0.appuio.cloud`. The certificate is then issued and renewed
   for you.
-* The mandatory GitHub Actions repository secrets and variables described below.
+- The mandatory GitHub Actions repository secrets and variables described below.
 
 ## GitHub Actions configuration
 
 The deployment workflows require the following **repository secrets**:
 
-* `APPFLOW_MONITORING_EMAIL`
-* `APPFLOW_EXAMPLE_CLIENT_SECRET`
-* `KUBECONFIG_TEST`
-* `KUBECONFIG_PROD`
+- `APPFLOW_MONITORING_EMAIL`
+- `APPFLOW_EXAMPLE_CLIENT_SECRET`
+- `KUBECONFIG_TEST`
+- `KUBECONFIG_PROD`
 
 For real deployments, consider using separate GitHub environments for test and
 production. This lets you scope environment-specific values separately, especially:
 
-* `APPFLOW_EXAMPLE_CLIENT_SECRET` for test and production
-* `KUBECONFIG_TEST`
-* `KUBECONFIG_PROD`
+- `APPFLOW_EXAMPLE_CLIENT_SECRET` for test and production
+- `KUBECONFIG_TEST`
+- `KUBECONFIG_PROD`
 
 ## Setup
 
@@ -88,10 +88,10 @@ Keycloak.
 
 `service.envFrom` reads two objects, and the split decides what ends up in Git:
 
-* the environment ConfigMap, committed here, holds `KC_*` settings and every
+- the environment ConfigMap, committed here, holds `KC_*` settings and every
   non-secret value the realm JSONs interpolate: hostnames, IdP endpoint URLs,
   timeouts and feature switches.
-* the environment Secret holds client secrets and credentials, and is never
+- the environment Secret holds client secrets and credentials, and is never
   committed.
 
 The Secret is listed second, so it can override a key from the ConfigMap. VSHN sets
@@ -112,5 +112,5 @@ from https://github.com/vshn/custom-keycloak-image-template and set
 
 ## Reference
 
-* https://docs.appcat.ch/vshn-managed/keycloak/
-* Plans and sizing: https://docs.appcat.ch/vshn-managed/keycloak/plans.html
+- https://docs.appcat.ch/vshn-managed/keycloak/
+- Plans and sizing: https://docs.appcat.ch/vshn-managed/keycloak/plans.html
