@@ -1,5 +1,6 @@
 env:
   KUBECONFIG: /tmp/github-ci.kubeconfig
+  APPFLOW_REGISTRY: registry.cloudscale-lpg-2.appuio.cloud
   REGISTRY: registry.cloudscale-lpg-2.appuio.cloud
   TEST_DOMAIN: apps.cloudscale-lpg-2.appuio.cloud
 jobs:
@@ -11,13 +12,24 @@ jobs:
     - uses: ./.github/actions/setup
       with:
         KUBECONFIG_DATA: "${{ secrets.KUBECONFIG_TEST }}"
+    - id: build
+      uses: ./.github/actions/build
+      with:
+        IMGNAME: "${{ env.CI_PROJECT_NAME }}"
+        REGISTRY: "${{ env.REGISTRY }}"
     - env:
+        APPFLOW_CI_COMMIT_REF_SLUG: "${{ env.COMMIT_REF_SLUG }}"
+        APPFLOW_CI_PROJECT_NAME: "${{ env.CI_PROJECT_NAME }}"
+        APPFLOW_IMAGE_DIGEST: "${{ steps.build.outputs.IMAGE_DIGEST || 'not built in this job' }}"
+        IMAGE_DIGEST: "${{ steps.build.outputs.IMAGE_DIGEST || 'not built in this job' }}"
         NEWLINE: |2+
 
         SECRETS_JSON: "${{ toJson(secrets) }}"
         VARS_JSON: "${{ toJson(vars) }}"
       name: Helm Chart preview
       run: |
+        export APPFLOW_PULL_DOCKERCONFIGJSON=$(cat ~/.docker/config.json)
+
         ENVV=$(jq -n --arg p 'APPFLOW_' 'env | with_entries(select(.key | startswith($p)))')
         VARS=$(jq -n --arg p 'APPFLOW_' 'env.VARS_JSON | fromjson? // {} |  with_entries(select(.key | startswith($p)))')
         SECRETS=$(jq -n --arg p 'APPFLOW_' 'env.SECRETS_JSON | fromjson? // {} | with_entries(select(.key | startswith($p)))')
@@ -31,12 +43,18 @@ jobs:
         sudo chmod -R o+w $(printf '%s/helm' "$PWD")
         docker run -v "${PWD}:/data" -w /data ghcr.io/appuio/helm-v4:latest /bin/bash -c "cp .github-ci.kubeconfig /tmp/github-ci.kubeconfig; chmod 400 /tmp/github-ci.kubeconfig; /bin/helm dependency update '/data/helm'; HELM_DIFF_USE_UPGRADE_DRY_RUN=true /bin/helm diff upgrade 'test' '/data/helm' --namespace '${NAMESPACE}' --values '/data/helm/values.yaml' --values '/data/helm/values.test.yaml' --values '/data/helm/vars.yaml' --kubeconfig /tmp/github-ci.kubeconfig --allow-unreleased"
     - env:
+        APPFLOW_CI_COMMIT_REF_SLUG: "${{ env.CI_COMMIT_REF_SLUG }}"
+        APPFLOW_CI_PROJECT_NAME: "${{ env.CI_PROJECT_NAME }}"
+        APPFLOW_IMAGE_DIGEST: "${{ steps.build.outputs.IMAGE_DIGEST || 'not built in this job' }}"
+        IMAGE_DIGEST: "${{ steps.build.outputs.IMAGE_DIGEST || 'not built in this job' }}"
         NEWLINE: |2+
 
         SECRETS_JSON: "${{ toJson(secrets) }}"
         VARS_JSON: "${{ toJson(vars) }}"
       name: Helm Chart deploy
       run: |
+        export APPFLOW_PULL_DOCKERCONFIGJSON=$(cat ~/.docker/config.json)
+
         ENVV=$(jq -n --arg p 'APPFLOW_' 'env | with_entries(select(.key | startswith($p)))')
         VARS=$(jq -n --arg p 'APPFLOW_' 'env.VARS_JSON | fromjson? // {} |  with_entries(select(.key | startswith($p)))')
         SECRETS=$(jq -n --arg p 'APPFLOW_' 'env.SECRETS_JSON | fromjson? // {} | with_entries(select(.key | startswith($p)))')

@@ -106,9 +106,9 @@ production only after review.
 
 ## Custom themes and extensions
 
-VSHN runs its own Keycloak image. To ship custom themes or providers, build an image
-from https://github.com/vshn/custom-keycloak-image-template and set
-`service.customizationImage`.
+VSHN runs its own Keycloak image. To ship custom themes or providers you need to use
+a [customization Image](https://docs.appcat.ch/vshn-managed/keycloak/customization.html#_customization_image).
+In this repo you find an example [Dockerfile](Dockerfile) and example content for it in [docker](docker).
 
 ## Reference
 
