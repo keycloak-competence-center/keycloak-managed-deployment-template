@@ -1,0 +1,46 @@
+adminConsole:
+  # Can keep the admin console off the public FQDN. It stays reachable through
+  #   kubectl port-forward -n <namespace> svc/<instance>-keycloakx-http 8080:80
+  # Anyone who should do that needs to be in security.allowedGroups below.
+  private: false
+  # Alternative to private: publish the admin console on its own hostname.
+backup:
+  # UTC, standard cron. Keep it clear of the maintenance window.
+  schedule: "0 2 * * *"
+  retention:
+    keepDaily: 14
+# If your cluster supports encrypted ssd disk. It is a keycloak, potentially with client secrets.
+# This is given on e.g., APPUiO
+encryption:
+  enabled: true
+# Number of Keycloak servers, 0 to 3.
+# If you want a service level, you must also set the serviceLevel: guaranteed
+instances: 2
+maintenance:
+  # UTC. VSHN patches Keycloak and PostgreSQL inside this window, which implies
+  # a restart. Pick a quiet hour.
+  # For test instances, set it to wednesday at 09:00: Then you have the most time to fix the problem or pause the update
+  # before the prod instance is updated.
+  dayOfWeek: monday
+  timeOfDay: "23:00:00"
+  # Pins the Keycloak image and stops automatic upgrades. An escape hatch for
+  # sitting out a bad release; you own patching for as long as it is set.
+  # pinImageTag:
+# standard-2 (500m CPU, 2Gi RAM), standard-4 (1 CPU, 4Gi RAM), both 16Gi disk.
+# standard-8 exceeds the default APPUiO Cloud quota; ask VSHN before using it.
+plan: standard-2
+postgres:
+  # Explicitly state the major postgres version you want.
+  majorVersion: 18
+  pgSettings:
+    # Forces a WAL segment every 5 minutes, so a restore never trails
+    # reality by more than that even when write traffic is low.
+    archiveTimeout: 300
+# Groups granted read access to the instance namespace. Without this nobody
+# can port-forward to the private admin console.
+security:
+  allowedGroups: []
+  allowedUsers: []
+# besteffort or guaranteed. guaranteed buys a VSHN SLA.
+serviceLevel: besteffort
+version: 26

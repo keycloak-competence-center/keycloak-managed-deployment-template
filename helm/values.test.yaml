@@ -1,0 +1,15 @@
+env:
+  APPFLOW_FQDN: vshnkeycloak-template-test.apps.cloudscale-lpg-2.appuio.cloud
+backup:
+  # If the backup fails, then during daytime when someone is here to fix it.
+  schedule: "0 12 * * *"
+  retention:
+    keepDaily: 2
+instances: 1
+maintenance:
+  # For test instances, set it to wednesday at 09:00: Then you have the most time to fix the problem or pause the update.
+  dayOfWeek: wednesday
+  timeOfDay: "09:00:00"
+plan: standard-2
+serviceLevel: besteffort
+version: 26

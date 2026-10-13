@@ -1,0 +1,3 @@
+env:
+  APPFLOW_FQDN: vshnkeycloak-template.apps.cloudscale-lpg-2.appuio.cloud
+serviceLevel: guaranteed

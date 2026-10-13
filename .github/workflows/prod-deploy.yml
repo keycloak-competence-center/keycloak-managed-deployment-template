@@ -1,0 +1,54 @@
+env:
+  KUBECONFIG: /tmp/github-ci.kubeconfig
+  REGISTRY: registry.cloudscale-lpg-2.appuio.cloud
+  TEST_DOMAIN: apps.cloudscale-lpg-2.appuio.cloud
+jobs:
+  deploy:
+    environment: prod
+    runs-on: ubuntu-latest
+    steps:
+    - name: Ensure we are running on a tag
+      run: "test '${{ github.ref_type }}' == 'tag'"
+    - uses: actions/checkout@v4
+    - uses: ./.github/actions/setup
+      with:
+        KUBECONFIG_DATA: "${{ secrets.KUBECONFIG_PROD }}"
+    - env:
+        NEWLINE: |2+
+
+        SECRETS_JSON: "${{ toJson(secrets) }}"
+        VARS_JSON: "${{ toJson(vars) }}"
+      name: Helm Chart preview
+      run: |
+        ENVV=$(jq -n --arg p 'APPFLOW_' 'env | with_entries(select(.key | startswith($p)))')
+        VARS=$(jq -n --arg p 'APPFLOW_' 'env.VARS_JSON | fromjson? // {} |  with_entries(select(.key | startswith($p)))')
+        SECRETS=$(jq -n --arg p 'APPFLOW_' 'env.SECRETS_JSON | fromjson? // {} | with_entries(select(.key | startswith($p)))')
+
+        jq -n --arg p 'APPFLOW_' --argjson e "$ENVV" --argjson v "$VARS" --argjson s "$SECRETS" \
+          '{env: ($e + $v + $s + ($e + $v + $s | with_entries(.key |= ltrimstr($p))))}' > "${PWD}/helm/vars.yaml"
+
+        jq '.env | keys' "${PWD}/helm/vars.yaml"
+
+        cp "${KUBECONFIG}" ".github-ci.kubeconfig"
+        sudo chmod -R o+w $(printf '%s/helm' "$PWD")
+        docker run -v "${PWD}:/data" -w /data ghcr.io/appuio/helm-v4:latest /bin/bash -c "cp .github-ci.kubeconfig /tmp/github-ci.kubeconfig; chmod 400 /tmp/github-ci.kubeconfig; /bin/helm dependency update '/data/helm'; HELM_DIFF_USE_UPGRADE_DRY_RUN=true /bin/helm diff upgrade 'prod' '/data/helm' --namespace '${NAMESPACE}' --values '/data/helm/values.yaml' --values '/data/helm/values.prod.yaml' --values '/data/helm/vars.yaml' --kubeconfig /tmp/github-ci.kubeconfig --allow-unreleased"
+    - env:
+        NEWLINE: |2+
+
+        SECRETS_JSON: "${{ toJson(secrets) }}"
+        VARS_JSON: "${{ toJson(vars) }}"
+      name: Helm Chart deploy
+      run: |
+        ENVV=$(jq -n --arg p 'APPFLOW_' 'env | with_entries(select(.key | startswith($p)))')
+        VARS=$(jq -n --arg p 'APPFLOW_' 'env.VARS_JSON | fromjson? // {} |  with_entries(select(.key | startswith($p)))')
+        SECRETS=$(jq -n --arg p 'APPFLOW_' 'env.SECRETS_JSON | fromjson? // {} | with_entries(select(.key | startswith($p)))')
+
+        jq -n --arg p 'APPFLOW_' --argjson e "$ENVV" --argjson v "$VARS" --argjson s "$SECRETS" \
+          '{env: ($e + $v + $s + ($e + $v + $s | with_entries(.key |= ltrimstr($p))))}' > "${PWD}/helm/vars.yaml"
+
+        cp "${KUBECONFIG}" ".github-ci.kubeconfig"
+        sudo chmod -R o+w $(printf '%s/helm' "$PWD")
+        docker run -v "${PWD}:/data" -w /data ghcr.io/appuio/helm-v4:latest /bin/bash -c "cp .github-ci.kubeconfig /tmp/github-ci.kubeconfig; chmod 400 /tmp/github-ci.kubeconfig; /bin/helm dependency update /data/helm; /bin/helm upgrade --install 'prod' /data/helm --namespace '${NAMESPACE}' --values '/data/helm/values.yaml' --values '/data/helm/values.prod.yaml' --values '/data/helm/vars.yaml' --kubeconfig /tmp/github-ci.kubeconfig"
+name: Deploy to prod
+"on":
+  workflow_dispatch: {}
