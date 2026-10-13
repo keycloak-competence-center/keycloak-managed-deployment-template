@@ -5,6 +5,7 @@ backup:
   schedule: "0 12 * * *"
   retention:
     keepDaily: 2
+environment: test
 instances: 1
 maintenance:
   # For test instances, set it to wednesday at 09:00: Then you have the most time to fix the problem or pause the update.

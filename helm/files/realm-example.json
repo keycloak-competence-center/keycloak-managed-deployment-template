@@ -2,6 +2,7 @@
   "realm": "example",
   "enabled": true,
   "displayName": "$(env:REALM_DISPLAY_NAME:-Example)",
+  "loginTheme": "$(env:REALM_LOGIN_THEME:-example)",
   "ssoSessionIdleTimeout": "$(env:REALM_SSO_MAX_IDLE_TIMEOUT:-1800)",
   "ssoSessionMaxLifespan": "$(env:REALM_SSO_MAX_LIFESPAN:-36000)",
   "clients": [

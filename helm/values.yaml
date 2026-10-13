@@ -13,6 +13,8 @@ backup:
 # This is given on e.g., APPUiO
 encryption:
   enabled: true
+# if the customizationImage is are tagged or not. test images use the IMAGE_DIGEST, in prod we use tagged images.
+environment: prod
 # Number of Keycloak servers, 0 to 3.
 # If you want a service level, you must also set the serviceLevel: guaranteed
 instances: 2

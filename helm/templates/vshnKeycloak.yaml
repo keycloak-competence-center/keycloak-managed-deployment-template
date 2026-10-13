@@ -3,6 +3,10 @@
 # Every value below is either a working default or a placeholder in <angle brackets>
 # that has to be filled in. Field reference:
 # https://docs.appcat.ch/vshn-managed/keycloak/
+{{- $customization_tag := printf ":%s" .Values.env.APPFLOW_CI_COMMIT_REF_SLUG }}
+{{- if eq .Values.environment "test" }}
+  {{- $customization_tag = printf "@%s" .Values.env.APPFLOW_IMAGE_DIGEST }}
+{{- end }}
 ---
 apiVersion: vshn.appcat.vshn.io/v1
 kind: VSHNKeycloak
@@ -51,6 +55,18 @@ spec:
       # becomes a file under /opt/keycloak/setup/project, and keycloak-config-cli
       # imports all of them on every start.
       customConfigurationRef: {{ .Release.Name}}-keycloak-config
+
+      # OCI Image that contains themes, providers and or other custom files like password blacklists.
+      # If you don't need it, just remove this section.
+      customizationImage:
+        image: {{ .Values.env.APPFLOW_REGISTRY }}/{{ .Release.Namespace }}/{{ .Values.env.APPFLOW_CI_PROJECT_NAME }}{{ $customization_tag }}
+        imagePullSecretRef:
+          name: {{ .Release.Name}}-appflow-deployer-pull-secret
+          namespace: {{ .Release.Namespace }}
+      # If you don't have blacklists, you can remove this section.
+      customFiles:
+        - source: /blacklists
+          destination: data/password-blacklists/
 
       # Sources for environment variables. Used both by Keycloak itself (KC_* settings)
       # and by the $(env:NAME:-default) placeholders inside the realm JSONs.
