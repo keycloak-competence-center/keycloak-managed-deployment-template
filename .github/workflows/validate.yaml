@@ -42,6 +42,10 @@ jobs:
           done
 
       - env:
+          APPFLOW_CI_COMMIT_REF_SLUG: ${{ env.CI_COMMIT_REF_SLUG }}
+          APPFLOW_CI_PROJECT_NAME: "${{ env.CI_PROJECT_NAME }}"
+          APPFLOW_IMAGE_DIGEST: "test"
+          APPFLOW_PULL_DOCKERCONFIGJSON: "{}"
           NEWLINE: |2+
 
           SECRETS_JSON: "${{ toJson(secrets) }}"
